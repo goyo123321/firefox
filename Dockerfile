@@ -8,23 +8,19 @@ RUN apk add --no-cache \
     websockify \
     supervisor \
     bash \
-    curl \
-    wget \
     ttf-freefont \
     && rm -rf /var/cache/apk/* \
     && ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 
+# 创建用户和配置目录（但不预装插件）
 RUN adduser -D -u 1000 firefoxuser \
-    && mkdir -p /home/firefoxuser/.mozilla/extensions \
+    && mkdir -p /home/firefoxuser/.mozilla/firefox/default-release \
     && chown -R firefoxuser:firefoxuser /home/firefoxuser
 
 USER firefoxuser
 WORKDIR /home/firefoxuser
 
-RUN wget -q -O /tmp/auto_refresh.xpi \
-    "https://addons.mozilla.org/firefox/downloads/file/4278596/auto_refresh_page-2.3.0.xpi" \
-    && mv /tmp/auto_refresh.xpi /home/firefoxuser/.mozilla/extensions/auto_refresh_page@browser.extensions.com.xpi
-
+# 仅复制必要的配置文件，不再复制或下载 .xpi 文件
 COPY --chown=firefoxuser:firefoxuser supervisord.conf /etc/supervisor/conf.d/
 COPY --chown=firefoxuser:firefoxuser refresh.sh ./
 COPY --chown=firefoxuser:firefoxuser firefox-prefs.js /home/firefoxuser/.mozilla/firefox/default-release/user.js
@@ -32,5 +28,4 @@ COPY --chown=firefoxuser:firefoxuser firefox-prefs.js /home/firefoxuser/.mozilla
 RUN chmod +x ./refresh.sh
 
 EXPOSE 7860
-
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

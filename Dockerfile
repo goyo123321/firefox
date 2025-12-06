@@ -1,39 +1,37 @@
-# 使用 Debian Slim 作为基础镜像
-FROM debian:12-slim
+# 使用 Alpine 作为基础镜像
+FROM alpine:latest
 
-# 安装最小化必要组件
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
+# 1. 安装绝对最小化的必要包
+# 使用 --no-cache 并在同一层清理，避免缓存文件增加体积
+RUN apk add --no-cache \
+    # 核心应用
     firefox-esr \
+    # 图形显示与远程访问（最小集）
     xvfb \
     x11vnc \
     novnc \
     websockify \
     supervisor \
-    # 相比 Alpine，Debian 下 Firefox 的图形依赖更简洁
-    libgtk-3-0 \
-    libx11-xcb1 \
-    libxtst6 \
-    # 中文字体支持（可选，可移除）
-    fonts-wqy-microhei \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-    # 为 noVNC 创建快捷方式
+    # 基础系统工具
+    bash \
+    # 可选：更小的字体包，如果网页显示异常可以换回 ttf-freefont
+    ttf-dejavu \
+    && rm -rf /var/cache/apk/* \
     && ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 
-# 创建应用程序用户
-RUN useradd -m -u 1000 -s /bin/bash firefoxuser
+# 2. 创建用户
+RUN adduser -D -u 1000 firefoxuser \
+    && mkdir -p /home/firefoxuser/.mozilla/firefox/default-release \
+    && chown -R firefoxuser:firefoxuser /home/firefoxuser
+
 USER firefoxuser
 WORKDIR /home/firefoxuser
 
-# 复制配置文件
+# 3. 复制配置文件
 COPY --chown=firefoxuser:firefoxuser supervisord.conf /etc/supervisor/conf.d/
 COPY --chown=firefoxuser:firefoxuser refresh.sh ./
 COPY --chown=firefoxuser:firefoxuser firefox-prefs.js ./
 RUN chmod +x ./refresh.sh
 
-# 暴露 Hugging Face Spaces 默认端口
 EXPOSE 7860
-
-# 启动 Supervisor
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

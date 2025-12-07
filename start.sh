@@ -1,13 +1,17 @@
 #!/bin/bash
 set -e
 
+# 设置语言环境
+export LANG=${LANG:-en_US.UTF-8}
+export LC_ALL=${LC_ALL:-C.UTF-8}
+
 echo "========================================="
 echo "Starting Ultra-Lightweight Firefox noVNC"
 echo "========================================="
 echo "Display: ${DISPLAY_WIDTH}x${DISPLAY_HEIGHT}"
 echo "VNC Port: ${VNC_PORT}"
 echo "noVNC Port: ${NOVNC_PORT}"
-echo "Note: Running without HTTPS (for HTTPS, set up a reverse proxy)"
+echo "Fonts: Minimal set (DejaVu + misc)"
 echo "========================================="
 
 # 设置VNC密码

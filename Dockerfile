@@ -13,7 +13,7 @@ RUN apk update && \
 FROM alpine:edge
 WORKDIR /root
 
-# 安装依赖（最小化安装）
+# 安装依赖 - 添加 expect 用于非交互密码设置
 RUN apk update && \
     apk add --no-cache \
     bash \
@@ -25,7 +25,8 @@ RUN apk update && \
     websockify \
     ttf-freefont \
     sudo \
-    font-noto-cjk
+    font-noto-cjk \
+    expect
 
 # 从第一阶段复制Firefox
 COPY --from=firefox-builder /usr/lib/firefox /usr/lib/firefox

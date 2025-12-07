@@ -13,7 +13,7 @@ RUN apk update && \
 FROM alpine:edge
 WORKDIR /root
 
-# 安装依赖（包含expect用于非交互密码设置）
+# 安装依赖
 RUN apk update && \
     apk add --no-cache \
     bash \
@@ -26,37 +26,32 @@ RUN apk update && \
     ttf-freefont \
     sudo \
     font-noto-cjk \
-    expect
+    tigervnc  # 提供vncpasswd命令
 
 # 从第一阶段复制Firefox
 COPY --from=firefox-builder /usr/lib/firefox /usr/lib/firefox
 COPY --from=firefox-builder /usr/bin/firefox /usr/bin/firefox
-RUN ln -s /usr/lib/firefox/firefox /usr/local/bin/firefox
+RUN ln -s /usr/lib/firefox/firefox /usr/local/bin/firefox && \
+    ln -s /usr/lib/firefox/firefox /usr/bin/firefox
 
-# 复制配置文件和启动脚本
-COPY supervisord.conf /etc/supervisord.conf
+# 复制配置文件
 COPY entrypoint.sh /entrypoint.sh
 
-# 设置noVNC首页
-RUN cp /usr/share/novnc/vnc.html /usr/share/novnc/index.html
+# 设置权限和准备
+RUN chmod +x /entrypoint.sh && \
+    mkdir -p /usr/share/novnc && \
+    cp -r /usr/share/webapps/novnc/* /usr/share/novnc/ 2>/dev/null || true
 
-# 使启动脚本可执行
-RUN chmod +x /entrypoint.sh
+# 暴露端口
+EXPOSE ${NOVNC_PORT:-6901} ${VNC_PORT:-5901}
 
-# 暴露默认端口（可通过环境变量覆盖）
-EXPOSE ${NOVNC_PORT:-7860} ${VNC_PORT:-5901}
-
-# 设置环境变量默认值
+# 环境变量
 ENV VNC_PASSWORD=alpine
-ENV NOVNC_PORT=7860
+ENV NOVNC_PORT=6901
 ENV VNC_PORT=5901
 ENV DISPLAY_WIDTH=1280
 ENV DISPLAY_HEIGHT=720
 ENV DISPLAY_DEPTH=24
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:${NOVNC_PORT:-6901}/ || exit 1
-
-# 设置容器启动命令
+# 启动脚本
 ENTRYPOINT ["/entrypoint.sh"]

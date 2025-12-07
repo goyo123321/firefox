@@ -7,6 +7,7 @@ echo "========================================="
 echo "Display: ${DISPLAY_WIDTH}x${DISPLAY_HEIGHT}"
 echo "VNC Port: ${VNC_PORT}"
 echo "noVNC Port: ${NOVNC_PORT}"
+echo "Note: Running without HTTPS (for HTTPS, set up a reverse proxy)"
 echo "========================================="
 
 # 设置VNC密码

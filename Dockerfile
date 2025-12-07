@@ -49,7 +49,7 @@ RUN chmod +x /entrypoint.sh && \
     mkdir -p /var/log
 
 # 暴露默认端口
-EXPOSE 6901 5901
+EXPOSE 7860 5901
 
 # 启动脚本
 ENTRYPOINT ["/entrypoint.sh"]

@@ -44,6 +44,7 @@ autorestart=true
 EOF
 
 # 设置Fluxbox配置
+mkdir -p ~/.fluxbox
 cat > ~/.fluxbox/init << EOF
 session.screen0.toolbar.visible: false
 session.screen0.fullMaximization: false
@@ -59,6 +60,8 @@ echo "noVNC Web访问: http://<host>:${NOVNC_PORT}"
 echo "VNC服务器端口: ${VNC_PORT}"
 if [ -n "$VNC_PASSWORD" ]; then
     echo "VNC密码: ${VNC_PASSWORD}"
+else
+    echo "警告：VNC连接未设置密码"
 fi
 echo "================================"
 

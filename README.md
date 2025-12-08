@@ -1,4 +1,4 @@
-# firefox
+VNC_PASSWORD# firefox
 
 # Ultra-Lightweight Firefox with noVNC
 
@@ -20,21 +20,20 @@ docker-compose up -d
 docker-compose.yml：用于一键部署和运行，配置了端口、环境变量和卷挂载。
 ```
 # 设置环境变量
-ENV DISPLAY=:99
+DISPLAY=:99
 
-ENV DISPLAY_WIDTH=1280
+DISPLAY_WIDTH=1280
 
-ENV DISPLAY_HEIGHT=720
+DISPLAY_HEIGHT=720
 
-ENV VNC_PASSWORD=admin
+VNC_PASSWORD=admin
 
-ENV VNC_PORT=5900
+VNC_PORT=5900
 
-ENV NOVNC_PORT=7860
+NOVNC_PORT=7860
 
-ENV LANG=en_US.UTF-8
+LANG=en_US.UTF-8
 
-# docker-compose.yml
 ```yaml
 version: '3.8'
 services:
@@ -58,7 +57,7 @@ services:
 
 volumes:
   firefox_profile:
-``````
+```
 
 启动后，通过浏览器访问 http://你的服务器IP:7860 即可。
 

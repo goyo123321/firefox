@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# 设置中文字体环境
-export LANG=zh_CN.UTF-8
+# 设置中文环境变量
+export LANG=C.UTF-8
 export LANGUAGE=zh_CN:zh
-export LC_ALL=zh_CN.UTF-8
+export LC_ALL=C.UTF-8
 
 # 设置环境变量
 export DISPLAY=${DISPLAY:-:99}

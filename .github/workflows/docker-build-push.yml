@@ -7,7 +7,7 @@ on:
       custom_image_name:
         description: '自定义的镜像名称（例如：myapp/firefox-novnc）'
         required: true
-        default: '${{ github.repository }}' # 默认使用当前仓库名
+        default: 'testff' # 默认使用当前仓库名
 
 jobs:
   build:

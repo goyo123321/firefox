@@ -26,25 +26,28 @@ LABEL org.opencontainers.image.licenses="MIT"
 # 首先更新包管理器
 RUN apk update
 
-# 安装所有运行时依赖（仅英文字体）
+# 安装所有运行时依赖（分步安装，便于调试）
 RUN apk add --no-cache \
     firefox \
     xvfb \
     x11vnc \
     supervisor \
     bash \
-    fluxbox \
-    # 基础英文字体集
+    fluxbox
+
+# 安装字体（分步安装，确保每个包都可用）
+RUN apk add --no-cache \
     font-misc-misc \
     font-cursor-misc \
-    ttf-dejavu \
-    # 其他常用英文字体
+    ttf-dejavu
+
+RUN apk add --no-cache \
     ttf-freefont \
     ttf-liberation \
     ttf-inconsolata
 
-# 安装glibc locale支持（正确的方式）
-RUN apk add --no-cache glibc-langpack-en
+# 清理缓存
+RUN rm -rf /var/cache/apk/*
 
 # 创建必要的目录结构
 RUN mkdir -p /var/log/supervisor /etc/supervisor/conf.d /root/.vnc

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# 设置中文环境变量
-export LANG=C.UTF-8
-export LANGUAGE=zh_CN:zh
-export LC_ALL=C.UTF-8
+# 设置英文语言环境
+export LANG=en_US.UTF-8
+export LANGUAGE=en_US:en
+export LC_ALL=en_US.UTF-8
 
 # 设置环境变量
 export DISPLAY=${DISPLAY:-:99}
@@ -28,7 +28,11 @@ mkdir -p "$DATA_DIR/config"
 mkdir -p "$DATA_DIR/logs"
 
 # 创建字体缓存
-fc-cache -f
+if [ ! -f "$DATA_DIR/config/fonts.cache" ]; then
+    echo "Generating font cache..."
+    fc-cache -f -v
+    touch "$DATA_DIR/config/fonts.cache"
+fi
 
 # 创建VNC密码文件（如果不存在）
 if [ ! -f /root/.vnc/passwd ]; then

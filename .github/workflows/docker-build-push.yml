@@ -1,75 +1,53 @@
-name: 手动构建并推送 Docker 镜像
+name: 构建 Docker 镜像
 
+# 仅通过手动触发，并接受一个自定义镜像名作为输入
 on:
   workflow_dispatch:
     inputs:
-      image_name:
-        description: '镜像名称 (格式：用户名/仓库名)'
+      custom_image_name:
+        description: '自定义的镜像名称（例如：myapp/firefox-novnc）'
         required: true
-        default: '${{ github.repository }}'
-      image_tag:
-        description: '镜像标签'
-        required: true
-        default: 'latest'
-      push_to_registry:
-        description: '是否推送至 GitHub Container Registry'
-        type: choice
-        required: true
-        default: 'true'
-        options:
-          - 'true'
-          - 'false'
-
-env:
-  REGISTRY: ghcr.io  # 使用 GitHub Container Registry[citation:2]
+        default: '${{ github.repository }}' # 默认使用当前仓库名
 
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+
     steps:
+      # 1. 获取代码
       - name: 检出代码
         uses: actions/checkout@v4
 
+      # 2. 设置 Docker 构建环境
       - name: 设置 Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: 登录到容器注册表[citation:2]
-        if: github.event.inputs.push_to_registry == 'true'
+      # 3. 登录到 GitHub Container Registry
+      - name: 登录到 GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}         # 使用触发工作流的GitHub用户名[citation:2]
-          password: ${{ secrets.GITHUB_TOKEN }} # 使用自动生成的GitHub Token进行认证[citation:2]
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 提取 Docker 元数据
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.event.inputs.image_name }}
-          tags: |
-            type=raw,value=${{ github.event.inputs.image_tag }},priority=1000
-
-      - name: 构建并推送 Docker 镜像[citation:2]
+      # 4. 构建并推送镜像
+      - name: 构建并推送
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.event.inputs.push_to_registry == 'true' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+          # 使用输入的自定义镜像名，并固定标签为 latest
+          tags: |
+            ghcr.io/${{ github.event.inputs.custom_image_name }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
 
-      - name: 输出构建信息
+      # 5. 输出成功信息
+      - name: 输出镜像信息
         run: |
-          echo "✅ Docker 镜像构建完成！"
-          echo "📦 完整镜像地址: ${{ env.REGISTRY }}/${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}"
-          if [ "${{ github.event.inputs.push_to_registry }}" = "true" ]; then
-            echo "📍 已推送至 GitHub Container Registry。"
-            echo "📥 拉取命令: docker pull ${{ env.REGISTRY }}/${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}"
-          else
-            echo "ℹ️  镜像仅构建，未推送至仓库。"
-          fi
+          echo "✅ 镜像构建并推送成功！"
+          echo "📦 镜像地址：ghcr.io/${{ github.event.inputs.custom_image_name }}:latest"
+          echo "📥 拉取命令：docker pull ghcr.io/${{ github.event.inputs.custom_image_name }}:latest"

@@ -1,0 +1,8 @@
+session.title: Firefox Desktop - Local Storage at /data/firefox/
+session.screen0.toolbar.tools: prevworkspace, workspacename, nextworkspace, clock, iconbar, systemtray
+session.screen0.toolbar.visible: false
+session.screen0.workspaces: 1
+session.screen0.fullMaximization: false
+session.screen0.defaultDeco: NONE
+session.screen0.menu.file: ~/.fluxbox/fb_menu
+session.screen0.slit.onTop: false

@@ -1,150 +1,122 @@
-# ============================================================================
-# 阶段1: 占位构建器阶段
-# ============================================================================
-FROM alpine:3.18 AS builder
-RUN echo "KasmVNC will be installed via APK in the final stage." && mkdir -p /tmp
+# 阶段1: 构建器 - 仅准备静态资产
+FROM alpine:3.20 as builder
 
-# ============================================================================
-# 阶段2: 最终运行时镜像 (基于 Alpine 3.18 LTS)
-# ============================================================================
-FROM alpine:3.18
+# 安装临时构建工具
+RUN apk add --no-cache git openssl && \
+    mkdir -p /assets/novnc
 
-# 镜像元数据
-LABEL org.opencontainers.image.title="Firefox with KasmVNC (Alpine 3.18)"
-LABEL org.opencontainers.image.description="Stable Firefox browser with KasmVNC web access on Alpine 3.18 LTS"
-LABEL org.opencontainers.image.licenses="MIT"
+# 克隆 noVNC 及其依赖
+ARG NOVNC_VERSION=1.4.0
+ARG WEBSOCKIFY_VERSION=v0.11.0
 
-# 1. 更新源并分步安装系统包，确保每步成功
+RUN git clone --depth 1 --branch v${NOVNC_VERSION} \
+    https://github.com/novnc/noVNC.git /assets/novnc && \
+    git clone --depth 1 --branch ${WEBSOCKIFY_VERSION} \
+    https://github.com/novnc/websockify /assets/novnc/utils/websockify
+
+# 生成自签名SSL证书
+RUN mkdir -p /assets/novnc/utils/ssl && \
+    cd /assets/novnc/utils/ssl && \
+    openssl req -newkey rsa:2048 -nodes -keyout self.key \
+        -x509 -days 3650 -out self.crt \
+        -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost" && \
+    cat self.key self.crt > self.pem && \
+    rm self.key self.crt
+
+# 清理不需要的文件
+RUN cd /assets/novnc && \
+    rm -rf .git* test *.md docs utils/websockify/.git* && \
+    find . -name "*.css" -type f -exec gzip -k {} \; && \
+    find . -name "*.js" -type f -exec gzip -k {} \; && \
+    find . -name "*.html" -type f -exec gzip -k {} \;
+
+# 阶段2: 最终运行时镜像
+FROM alpine:3.20
+
+LABEL org.opencontainers.image.title="Firefox with noVNC - Local Storage at /data/firefox" \
+      org.opencontainers.image.description="Firefox browser with noVNC, VNC password support, and persistent local storage at /data/firefox/" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.version="1.0.0" \
+      maintainer="your-email@example.com"
+
+# 创建非root用户
+RUN addgroup -g 1000 -S appuser && \
+    adduser -u 1000 -S appuser -G appuser && \
+    mkdir -p /data/firefox && \
+    chown -R appuser:appuser /data/firefox
+
+# 设置环境变量
+ENV DISPLAY=:99 \
+    DISPLAY_WIDTH=1280 \
+    DISPLAY_HEIGHT=720 \
+    VNC_PORT=5900 \
+    NOVNC_PORT=5800 \
+    VNC_PASSWORD="" \
+    LANG=en_US.UTF-8 \
+    TZ=UTC \
+    FIREFOX_PROFILE_DIR=/data/firefox \
+    FIREFOX_DOWNLOAD_DIR=/data/firefox/downloads \
+    FIREFOX_LOCAL_STORAGE=/data/firefox/storage
+
+# 安装运行时依赖
 RUN apk update && apk add --no-cache \
     bash \
-    supervisor \
-    xvfb \
+    su-exec \
+    tzdata \
+    firefox \
     fluxbox \
-    coreutils \
-    findutils \
-    file \
-    wget \
-    ca-certificates \
-    && rm -rf /var/cache/apk/* && echo "✅ 核心系统包安装完成"
-
-# 2. 安装X11图形库
-RUN apk add --no-cache \
-    libx11 \
-    libxext \
-    libxi \
-    libxrandr \
-    libxfixes \
-    libxdamage \
-    libxcursor \
-    libxtst \
-    && echo "✅ X11图形库安装完成"
-
-# 3. 安装字体
-RUN apk add --no-cache \
+    xvfb \
+    x11vnc \
+    supervisor \
     font-misc-misc \
     font-cursor-misc \
     ttf-dejavu \
-    && echo "✅ 基础字体安装完成"
-
-# 4. 安装编码与网络库
-RUN apk add --no-cache \
-    libjpeg-turbo \
-    libpng \
-    libwebp \
-    openssl \
-    nettle \
-    && echo "✅ 编码与网络库安装完成"
-
-# 5. 安装VNC核心库
-# 注释掉原有的安装命令，因为KasmVNC APK包已自带依赖
-RUN echo "跳过单独安装 libvncserver/libvncclient，KasmVNC APK包已包含必要库。" && \
-    echo "✅ 已跳过VNC库安装步骤"
-
-# 6. 安装Firefox及其额外字体
-RUN apk add --no-cache \
-    firefox \
-    ttf-droid \
     ttf-freefont \
     ttf-liberation \
     ttf-inconsolata \
-    && echo "✅ Firefox及额外字体安装完成"
-
-# 7. 安装KasmVNC官方预编译包 (专为 Alpine 3.18 构建)
-# 注意：此URL对应 v1.4.0，架构为 x86_64。如需其他版本或ARM架构，请对应修改。
-RUN wget -q https://github.com/kasmtech/KasmVNC/releases/download/v1.4.0/kasmvncserver_alpine_318_1.4.0_x86_64.apk -O /tmp/kasmvnc.apk && \
-    apk add --allow-untrusted /tmp/kasmvnc.apk && \
-    rm /tmp/kasmvnc.apk && \
-    echo "✅ KasmVNC (Alpine 3.18专用版) 安装完成"
-
-# 8. 设置语言环境
-RUN apk add --no-cache locales && \
-    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && \
-    echo "en_GB.UTF-8 UTF-8" >> /etc/locale.gen && \
-    locale-gen en_US.UTF-8 en_GB.UTF-8 && \
+    font-noto \
+    font-noto-cjk \
+    curl \
+    gzip && \
     rm -rf /var/cache/apk/* && \
-    echo "✅ 语言环境设置完成"
+    mkdir -p \
+        /var/log/supervisor \
+        /etc/supervisor/conf.d \
+        /home/appuser/.vnc \
+        /home/appuser/.fluxbox && \
+    chown -R appuser:appuser /home/appuser /var/log/supervisor
 
-# 9. 创建目录结构
-RUN mkdir -p \
-    /var/log/supervisor \
-    /etc/supervisor/conf.d \
-    /root/.vnc \
-    /root/.fluxbox \
-    /root/.mozilla \
-    /data \
-    /data/downloads \
-    /data/bookmarks \
-    /data/cache \
-    /data/config \
-    /data/tmp \
-    /data/backups \
-    && chmod -R 777 /data && \
-    echo "✅ 目录结构创建完成"
+# 从构建器复制静态资产
+COPY --from=builder --chown=appuser:appuser /assets/novnc /opt/novnc
 
-# 10. 复制配置文件
+# 复制配置文件
 COPY supervisord.conf /etc/supervisor/supervisord.conf
 COPY start.sh /usr/local/bin/start.sh
-COPY init-storage.sh /usr/local/bin/init-storage.sh
-COPY backup.sh /usr/local/bin/backup.sh
-COPY restore.sh /usr/local/bin/restore.sh
-RUN chmod +x /usr/local/bin/*.sh && \
-    echo "✅ 配置文件复制完成"
+COPY fluxbox-init /home/appuser/.fluxbox/init
 
-# 11. 创建Firefox配置模板
-RUN mkdir -p /etc/firefox/template && \
-    cat > /etc/firefox/template/prefs.js << 'EOF'
-user_pref("browser.cache.disk.parent_directory", "/data/cache");
-user_pref("browser.download.dir", "/data/downloads");
-user_pref("browser.download.folderList", 2);
-user_pref("browser.download.useDownloadDir", true);
-user_pref("browser.bookmarks.file", "/data/bookmarks/bookmarks.html");
-user_pref("dom.storage.default_quota", 5242880);
-user_pref("dom.storage.enabled", true);
-user_pref("dom.indexedDB.enabled", true);
-user_pref("intl.accept_languages", "en-US, en");
-user_pref("font.language.group", "en-US");
-user_pref("browser.shell.checkDefaultBrowser", false);
-user_pref("browser.startup.page", 0);
-user_pref("datareporting.healthreport.uploadEnabled", false);
-user_pref("toolkit.telemetry.enabled", false);
-EOF
+# 创建必要的目录结构
+RUN mkdir -p ${FIREFOX_PROFILE_DIR} && \
+    mkdir -p ${FIREFOX_DOWNLOAD_DIR} && \
+    mkdir -p ${FIREFOX_LOCAL_STORAGE} && \
+    # 设置noVNC默认跳转页面
+    echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=vnc.html"></head><body></body></html>' > /opt/novnc/index.html && \
+    echo 'OK' > /opt/novnc/health && \
+    # 设置权限
+    chown -R appuser:appuser /opt/novnc ${FIREFOX_PROFILE_DIR} && \
+    chmod +x /usr/local/bin/start.sh && \
+    chmod 644 /opt/novnc/*.html /opt/novnc/*.js /opt/novnc/*.css 2>/dev/null || true
 
-# 12. 设置Fluxbox
-RUN echo '[begin] (fluxbox)' > /root/.fluxbox/menu && \
-    echo '[exec] (Firefox) {firefox}' >> /root/.fluxbox/menu && \
-    echo '[exec] (Terminal) {xterm}' >> /root/.fluxbox/menu && \
-    echo '[separator]' >> /root/.fluxbox/menu && \
-    echo '[exit] (Exit)' >> /root/.fluxbox/menu && \
-    echo '[end]' >> /root/.fluxbox/menu && \
-    echo 'firefox &' > /root/.fluxbox/startup && \
-    echo 'exec fluxbox' >> /root/.fluxbox/startup
+# 暴露端口
+EXPOSE 7860 5900
 
-# 13. 暴露端口
-EXPOSE 5901
-EXPOSE 7860
+# 声明数据卷（专门为Firefox数据）
+VOLUME /data/firefox
 
-# 15. 数据卷
-VOLUME ["/data"]
+# 切换为非root用户
+USER appuser
 
-# 17. 启动入口
+# 工作目录
+WORKDIR /home/appuser
+
+# 启动入口
 ENTRYPOINT ["/usr/local/bin/start.sh"]

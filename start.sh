@@ -69,10 +69,10 @@ user_pref("toolkit.telemetry.rejected", true);
 // 本地存储配置
 user_pref("browser.cache.disk.parent_directory", "/data/firefox/cache");
 user_pref("browser.cache.disk.enable", true);
-user_pref("browser.cache.disk.capacity", 1048576); // 1GB
-user_pref("dom.storage.default_quota", 5120); // 5MB per origin
+user_pref("browser.cache.disk.capacity", 1048576);
+user_pref("dom.storage.default_quota", 5120);
 user_pref("dom.storage.enabled", true);
-user_pref("dom.storage.default_bucket_quota", 5242880); // 5MB
+user_pref("dom.storage.default_bucket_quota", 5242880);
 
 // 语言设置
 user_pref("intl.accept_languages", "en-US, en");
@@ -93,36 +93,6 @@ fi
 # 创建扩展目录
 mkdir -p "${FIREFOX_PROFILE_DIR}/extensions"
 mkdir -p "${FIREFOX_PROFILE_DIR}/storage/default"
-
-# 创建自定义的supervisor配置文件
-cat > /etc/supervisor/conf.d/custom.conf << EOF
-[program:xvfb]
-command=Xvfb ${DISPLAY} -screen 0 ${DISPLAY_WIDTH}x${DISPLAY_HEIGHT}x24 -ac +extension GLX +render -noreset
-autorestart=true
-priority=100
-
-[program:fluxbox]
-command=fluxbox
-autorestart=true
-priority=200
-environment=DISPLAY=${DISPLAY}
-
-[program:firefox]
-command=firefox --display=${DISPLAY} --profile ${FIREFOX_PROFILE_DIR} --new-instance --no-remote
-autorestart=true
-priority=300
-environment=DISPLAY=${DISPLAY},HOME=/home/appuser
-
-[program:x11vnc]
-command=x11vnc -display ${DISPLAY} -forever -shared ${X11VNC_ARGS} -rfbport ${VNC_PORT} -noxdamage -noxrecord -noxfixes -wait 5 -shared -permitfiletransfer -tightfilexfer
-autorestart=true
-priority=400
-
-[program:novnc]
-command=bash -c 'cd /opt/novnc && ./utils/novnc_proxy --vnc localhost:${VNC_PORT} --listen ${NOVNC_PORT}'
-autorestart=true
-priority=500
-EOF
 
 # 解压noVNC的gzip静态资源（如果存在）
 if [ -f /opt/novnc/vnc.html.gz ]; then

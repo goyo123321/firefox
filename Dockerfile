@@ -8,8 +8,8 @@ FROM alpine:latest AS builder
 RUN apk add --no-cache wget xz
 
 # 定义 KasmVNC 版本和架构（可前往 https://github.com/kasmtech/KasmVNC/releases 查看最新版）
-ARG KASMVNC_VERSION="1.3.0"
-ARG KASMVNC_ARCH="x86_64"
+ARG KASMVNC_VERSION="1.0.1"
+ARG KASMVNC_ARCH="linux_x86_64"
 
 # 下载、验证并提取官方预编译的二进制包
 RUN cd /tmp && \

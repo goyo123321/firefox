@@ -55,13 +55,10 @@ RUN apk add --no-cache \
     nettle \
     && echo "✅ 编码与网络库安装完成"
 
-# 5. 安装VNC核心库 (KasmVNC运行依赖)
-# 启用 community 仓库并安装
-RUN echo "http://dl-cdn.alpinelinux.org/alpine/v3.18/community" >> /etc/apk/repositories && \
-    apk update && apk add --no-cache \
-    libvncserver \
-    libvncclient \
-    && echo "✅ VNC核心库安装完成 (来自 community 仓库)"
+# 5. 安装VNC核心库
+# 注释掉原有的安装命令，因为KasmVNC APK包已自带依赖
+RUN echo "跳过单独安装 libvncserver/libvncclient，KasmVNC APK包已包含必要库。" && \
+    echo "✅ 已跳过VNC库安装步骤"
 
 # 6. 安装Firefox及其额外字体
 RUN apk add --no-cache \

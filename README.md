@@ -37,9 +37,11 @@ LANG=en_US.UTF-8
 ```yaml
 version: '3.8'
 
+version: '3.8'
+
 services:
   firefox:
-    image: ghcr.io/goyo123321/firefox:latest
+    image: ghcr.io/goyo123321/test-firefox:latest  # 镜像名
     container_name: firefox
     restart: unless-stopped
     ports:
@@ -51,15 +53,16 @@ services:
       - DISPLAY_HEIGHT=${DISPLAY_HEIGHT:-720}
       - NOVNC_PORT=${NOVNC_PORT:-7860}
       - VNC_PORT=${VNC_PORT:-5900}
+      - DATA_DIR=/data  # 明确设置数据目录
     shm_size: "${SHM_SIZE:-1gb}"
     volumes:
-      # 关键挂载点1：持久化Firefox配置文件（书签、扩展、历史记录）
-      - firefox_profile:/root/.mozilla
-      # 关键挂载点2：持久化下载目录（将容器内Downloads映射到宿主机当前目录下的downloads文件夹）
-      - ./downloads:/root/Downloads
+      # 挂载Firefox配置文件目录（对应脚本中的FIREFOX_DATA_DIR）
+      - firefox_data:/data/firefox
+      # 挂载下载目录
+      - ./downloads:/data/downloads
 
 volumes:
-  firefox_profile:
+  firefox_data:
 ```
 # .env 文件内容示例
   ```bash
@@ -79,5 +82,6 @@ volumes:
 
 镜像预设了两个重要的卷挂载点，确保数据持久化：
 
-· 下载目录：容器内的 /root/Downloads 自动挂载到宿主机的 ./downloads 目录。你所有通过Firefox下载的文件都会保存在这里。
-· Firefox配置：容器内的 /root/.mozilla 挂载到Docker管理卷，用于保存你的书签、扩展和浏览历史。
+1. 脚本会在/data/firefox中存储Firefox配置
+2. 脚本会创建/data/downloads目录用于下载
+3. 脚本会正确设置X11显示和VNC配置

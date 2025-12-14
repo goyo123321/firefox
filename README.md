@@ -39,28 +39,30 @@ version: '3.8'
 
 services:
   firefox:
-    image: ghcr.io/goyo123321/test-firefox:latest  # 镜像名
+    image: ghcr.io/goyo123321/test-firefox:latest
     container_name: firefox
     restart: unless-stopped
     ports:
       - "${NOVNC_PORT:-7860}:7860"  # noVNC web界面
       - "${VNC_PORT:-5900}:5900"    # VNC服务器端口
     environment:
-      - VNC_PASSWORD=${VNC_PASSWORD:-changeme}
-      - DISPLAY_WIDTH=${DISPLAY_WIDTH:-1280}
-      - DISPLAY_HEIGHT=${DISPLAY_HEIGHT:-720}
-      - NOVNC_PORT=${NOVNC_PORT:-7860}
-      - VNC_PORT=${VNC_PORT:-5900}
-      - DATA_DIR=/data  # 明确设置数据目录
-    shm_size: "${SHM_SIZE:-1gb}"
+      - VNC_PASSWORD=${VNC_PASSWORD:-changeme}  # VNC连接密码
+      - DISPLAY_WIDTH=${DISPLAY_WIDTH:-1280}    # 显示宽度
+      - DISPLAY_HEIGHT=${DISPLAY_HEIGHT:-720}   # 显示高度
+      - NOVNC_PORT=${NOVNC_PORT:-7860}          # noVNC web端口
+      - VNC_PORT=${VNC_PORT:-5900}              # VNC服务器端口
+      - DATA_DIR=/data                          # 数据目录路径
+      # 以下环境变量已在脚本中设置默认值，可根据需要覆盖
+      # - LANG=C.UTF-8                           # 语言设置
+      # - LC_ALL=C.UTF-8                         # 本地化设置
+      # - DISPLAY=:99                            # X11显示
+    shm_size: "${SHM_SIZE:-1gb}"                # 共享内存大小
     volumes:
-      # 挂载Firefox配置文件目录（对应脚本中的FIREFOX_DATA_DIR）
-      - firefox_data:/data/firefox
-      # 挂载下载目录
-      - ./downloads:/data/downloads
+      - firefox_data:/data/firefox              # Firefox配置文件持久化
+      - ./downloads:/data/downloads             # 下载目录映射到宿主机
 
 volumes:
-  firefox_data:
+  firefox_data:                                 # Firefox数据卷定义
 ```
 # .env 文件内容示例
   ```bash

@@ -37,8 +37,6 @@ LANG=en_US.UTF-8
 ```yaml
 version: '3.8'
 
-version: '3.8'
-
 services:
   firefox:
     image: ghcr.io/goyo123321/test-firefox:latest  # 镜像名

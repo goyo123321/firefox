@@ -18,6 +18,14 @@ cp .env.example .env
 docker-compose up -d
 
 docker-compose.yml：用于一键部署和运行，配置了端口、环境变量和卷挂载。
+# 复制环境变量文件并修改密码
+cp .env.example .env
+# 编辑 .env 文件，设置你的 VNC_PASSWORD
+
+# 使用 Docker Compose 启动
+docker-compose up -d
+
+docker-compose.yml：用于一键部署和运行，配置了端口、环境变量和卷挂载。
 ```
 # 设置环境变量
 DISPLAY=:99

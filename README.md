@@ -46,7 +46,7 @@ services:
       - "${NOVNC_PORT:-7860}:7860"  # noVNC web界面
       - "${VNC_PORT:-5900}:5900"    # VNC服务器端口
     environment:
-      - VNC_PASSWORD=${VNC_PASSWORD:-changeme}  # VNC连接密码
+      - VNC_PASSWORD=${VNC_PASSWORD:-admin}  # VNC连接密码
       - DISPLAY_WIDTH=${DISPLAY_WIDTH:-1280}    # 显示宽度
       - DISPLAY_HEIGHT=${DISPLAY_HEIGHT:-720}   # 显示高度
       - NOVNC_PORT=${NOVNC_PORT:-7860}          # noVNC web端口
